@@ -10,22 +10,36 @@ The sources are:
 - **Books:** [Olen Library](https://openlibrary.org/),
 [Google books](https://books.google.com/?) and [GoodReads](https://www.goodreads.com/)\*
 
-## Todo:
+## ToDo:
+
 - [ ] Implement and test APIs
-  - [X] TV and Movies
+  - [X] TV and movies
   - [X] Games
   - [ ] Books
-- [ ] Add search by date feature
-  - [X] TMDB
+- [ ] Improve data search
+  - [X] TV and movies
   - [ ] Games
   - [ ] Books
+- [ ] Create Notion model
+- [ ] Publish Notion connection
+- [ ] Automate adding databases
+- [ ] Prepare model, connection and form
+- [ ] Make it public
+- [ ] Make the fields optional
+- [ ] Optimize and limit API calls
+- [ ] Upload local reviews to Letterboxd
+
+
+## How to use (NOT AVAILABLE YET, this is only what I'm planning}
+
+1. Make a copy of [this](about:blank) database
+1. Add [this](about:blank) connection to the database
+1. Access [this](about:blank) link and fill required info
+1. Done
 
 ## Notes
 
-For now, this is only a local side-project, the Notion's connection is not
-public and it's my first time really meddling with APIs and even Notion at all.
-If anybody more experienced want to help of even use this to improve this
-code, you are  welcome, but I'll keep trying to make this work
+For now, this is only a local side-project, the Notion's connection is not public and it's my first time really meddling with APIs and even Notion at all. If anybody more experienced want to help of even use this to improve this code, you are  welcome, but I'll keep trying to make this work
 
 Most of the implementations are not in their best shape yet, but the books
 one is almost completely broken, if you want to use it, I can't recommend

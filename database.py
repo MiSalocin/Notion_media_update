@@ -2,7 +2,6 @@ import time
 import concurrent.futures
 
 from modules.audiovisual import *
-from modules.book import *
 from modules.game import *
 
 def get_all_notion_entries():
@@ -61,11 +60,8 @@ def search(search_query, media_type=None, release_date=None, page_id=None):
         page_id: Optional ID of an existing Notion page to update
     """
     try:
-        err = 1
 
-        if media_type == "Book":
-            result = asyncio.run(search_book(search_query))
-        elif media_type == "Game":
+        if media_type == "Game":
             result = search_game(search_query)
         elif media_type == "Movie" or media_type == "TV Series" :
             result = search_movies_and_series(search_query, media_type, release_date)

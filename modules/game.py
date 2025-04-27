@@ -207,6 +207,12 @@ def process_rawg_game(game_data):
 
 def search_game(search_query):
     try:
+        game_data = asyncio.run(search_igdb_game(search_query))
+        if game_data:
+            return game_data
+    except Exception as e:
+        print(f"Error searching IGDB: {str(e)}")
+    try:
         rawg_url = f"https://api.rawg.io/api/games?key={RAWG_API_KEY}&search={quote(search_query)}&page_size=1"
         rawg_response = requests.get(rawg_url, timeout=10)
         rawg_data = rawg_response.json()
@@ -223,9 +229,3 @@ def search_game(search_query):
         print(f"Error searching RAWG: {str(e)}")
 
     # Or IGDB
-    try:
-        game_data = asyncio.run(search_igdb_game(search_query))
-        if game_data:
-            return game_data
-    except Exception as e:
-        print(f"Error searching IGDB: {str(e)}")

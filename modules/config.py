@@ -47,8 +47,9 @@ def to_notion(data, media_type, page_id=None):
     title = ""
     poster = cover_url = None
 
-
+    emoji = ""
     if media_type == "Book":
+        emoji = "📖"
         title = data.get("title", "")
         authors = data.get("authors", [])
         publish_date = data.get("publish_date", "")
@@ -74,7 +75,7 @@ def to_notion(data, media_type, page_id=None):
         properties["Global Rating"] = {"number": rating}
         properties["Episodes/pages"] = {"number": pages}
     if media_type == "Game":
-        # Extract fields
+        emoji = "🕹️"
         title = data.get("title", "")
         developers = data.get("developers", [])
         release_date = data.get("release_date", "")
@@ -99,6 +100,7 @@ def to_notion(data, media_type, page_id=None):
         properties["Release date"] = {"date": None} if not release_date else {"date": {"start": release_date}}
         properties["Global Rating"] = {"number": rating}
     if media_type == "TV Series" or media_type == "Movie":
+        emoji = "🎬"
         title = data.get("title") if media_type == "Movie" else data.get("name")
         # cover = f"https://image.tmdb.org/t/p/original{data.get('backdrop_path')}" if data.get("backdrop_path") else None
         poster = f"https://image.tmdb.org/t/p/original{data.get('poster_path')}" if data.get("poster_path") else None
@@ -184,9 +186,9 @@ def to_notion(data, media_type, page_id=None):
         update_url = f"https://api.notion.com/v1/pages/{page_id}"
         update_response = requests.patch(update_url, headers=notion_headers, json=payload)
         if update_response.status_code == 200:
-            print(f"🔄 '{title}' updated in Notion.")
+            print(f"{emoji}🔄 '{title}' updated in Notion.")
         else:
-            print(f"❌ Error updating '{title}': {update_response.text}")
+            print(f"{emoji}❌ Error updating '{title}': {update_response.text}")
     else:
         # Otherwise search for a page with the same title
         query_url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
@@ -200,9 +202,9 @@ def to_notion(data, media_type, page_id=None):
             update_url = f"https://api.notion.com/v1/pages/{page_id}"
             update_response = requests.patch(update_url, headers=notion_headers, json=payload)
             if update_response.status_code == 200:
-                print(f"🔄 '{title}' updated in Notion.")
+                print(f"{emoji}🔄 '{title}' updated in Notion.")
             else:
-                print(f"❌ Error updating '{title}': {update_response.text}")
+                print(f"{emoji}❌ Error updating '{title}': {update_response.text}")
         else:
             # Create a new page if no matching page was found
             create_url = "https://api.notion.com/v1/pages"
@@ -212,6 +214,6 @@ def to_notion(data, media_type, page_id=None):
             }
             create_response = requests.post(create_url, headers=notion_headers, json=create_payload)
             if create_response.status_code in [200, 201]:
-                print(f"✅ '{title}' added to notion.")
+                print(f"{emoji}✅ '{title}' added to notion.")
             else:
-                print(f"❌ Error adding '{title}': {create_response.text}")
+                print(f"{emoji}❌ Error adding '{title}': {create_response.text}")

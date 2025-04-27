@@ -3,6 +3,8 @@ import re
 import aiohttp
 
 from urllib.parse import quote
+
+import numpy as np
 from bs4 import BeautifulSoup
 
 def process_open_library(data):
@@ -48,10 +50,23 @@ def process_google_books(data):
     """
     Process Google Books API response
     """
-    if not data.get('items') or len(data['items']) == 0:
+    data = data['items']
+    if not data or len(data) == 0:
         return None
 
-    book = data['items'][0]['volumeInfo']
+    first = np.Inf
+    last = 0
+    for i in range(len(data)):
+        try:
+            date = int(str(data[i]['volumeInfo']['publishedDate'])[:4])
+        except:
+            continue
+        if first > date:
+            first = i
+        elif last < date:
+            last = i
+    print(first, last, data[0]['volumeInfo']['title'])
+    book = data[last]['volumeInfo']
 
     # Extract authors
     authors = []
@@ -176,19 +191,20 @@ async def search_book(title):
     async with aiohttp.ClientSession() as session:
 
         # Next try Google Books
-        google_books_url = f"https://www.googleapis.com/books/v1/volumes?q=intitle:{quote(title)}"
-        # If you have an API key: &key={GOOGLE_BOOKS_API_KEY}
+        google_books_url = f"https://www.googleapis.com/books/v1/volumes?q=intitle:{quote(title)}&maxResults=40"
         async with session.get(google_books_url) as response:
             if response.status == 200:
+                # print(response)
                 data = await response.json()
                 if data.get('totalItems', 0) > 0:
                     processed_data = process_google_books(data)
                     if processed_data:
-                        return {"source": "Google Books", "data": processed_data}
+                        return processed_data
 
         # Try Open Library first
         open_lib_url = f"https://openlibrary.org/search.json?title={quote(title)}"
         async with session.get(open_lib_url) as response:
+            # print(response)
             if response.status == 200:
                 data = await response.json()
                 if data.get('numFound', 0) > 0:

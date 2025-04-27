@@ -1,5 +1,6 @@
 # API Keys and other secret codes
 import os
+import numpy as np
 
 import requests
 from dotenv import load_dotenv
@@ -48,32 +49,32 @@ def to_notion(data, media_type, page_id=None):
     poster = cover_url = None
 
     emoji = ""
-    if media_type == "Book":
-        emoji = "📖"
-        title = data.get("title", "")
-        authors = data.get("authors", [])
-        publish_date = data.get("publish_date", "")
-        cover_url = data.get("cover_url", "")
-        subjects = data.get("subjects", [])
-        rating = data.get("rating", 0)
-        description = data.get("description", "")
-        pages = data.get("number_of_pages", 0)
-
-        # Get year from publish date
-        year = publish_date[:4] if publish_date else ""
-
-        # Add book properties
-        properties["Name"] = {"title": [{"text": {"content": title}}]}
-        properties["Year"] = {"rich_text": [{"text": {"content": year}}]}
-        properties["Image"] = {"files": []} if not cover_url else {
-            "files": [{"type": "external", "name": "Cover", "external": {"url": cover_url}}]}
-        properties["Writer"] = {"multi_select": authors}
-        properties["Genre"] = {"multi_select": subjects}
-        properties["Synopsis"] = {"rich_text": []} if not description else {
-            "rich_text": [{"text": {"content": description[:2000]}}]}  # Limit to 2000 chars
-        properties["Release date"] = {"date": None} if not publish_date else {"date": {"start": publish_date}}
-        properties["Global Rating"] = {"number": rating}
-        properties["Episodes/pages"] = {"number": pages}
+    # if media_type == "Book":
+    #     emoji = "📖"
+    #     title = data.get("title", "")
+    #     authors = data.get("authors", [])
+    #     publish_date = data.get("publish_date", "")
+    #     cover_url = data.get("cover_url", "")
+    #     subjects = data.get("subjects", [])
+    #     rating = data.get("rating", 0)
+    #     description = data.get("description", "")
+    #     pages = data.get("number_of_pages", 0)
+    #
+    #     # Get year from publish date
+    #     year = publish_date[:4] if publish_date else ""
+    #
+    #     # Add book properties
+    #     properties["Name"] = {"title": [{"text": {"content": title}}]}
+    #     properties["Year"] = {"rich_text": [{"text": {"content": year}}]}
+    #     properties["Image"] = {"files": []} if not cover_url else {
+    #         "files": [{"type": "external", "name": "Cover", "external": {"url": cover_url}}]}
+    #     properties["Writer"] = {"multi_select": authors}
+    #     properties["Genre"] = {"multi_select": subjects}
+    #     properties["Synopsis"] = {"rich_text": []} if not description else {
+    #         "rich_text": [{"text": {"content": description[:2000]}}]}  # Limit to 2000 chars
+    #     properties["Release date"] = {"date": None} if not publish_date else {"date": {"start": publish_date}}
+    #     properties["Global Rating"] = {"number": rating}
+    #     properties["Episodes/pages"] = {"number": pages}
     if media_type == "Game":
         emoji = "🕹️"
         title = data.get("title", "")
@@ -89,20 +90,21 @@ def to_notion(data, media_type, page_id=None):
         year = release_date[:4] if release_date else ""
 
         # Add game properties
-        properties["Name"] = {"title": [{"text": {"content": title}}]}
-        properties["Year"] = {"rich_text": [{"text": {"content": year}}]}
-        properties["Image"] = {"files": []} if not background_url else {
-            "files": [{"type": "external", "name": "Cover", "external": {"url": background_url}}]}
-        properties["Writer"] = {"multi_select": developers}
+        properties["Name"]              = {"title": [{"text": {"content": title}}]}
+        properties["Year"]              = {"rich_text": [{"text": {"content": year}}]}
+        properties["Image"]             = {"files": []} if not background_url else {
+                                    "files": [{"type": "external", "name": "Cover", "external": {"url": background_url}}]}
+        properties["Writer/Developer"]  = {"multi_select": developers}
         properties["Genre"] = {"multi_select": genres}
-        properties["Synopsis"] = {"rich_text": []} if not description else {
-            "rich_text": [{"text": {"content": description[:2000]}}]}  # Limit to 2000 chars
-        properties["Release date"] = {"date": None} if not release_date else {"date": {"start": release_date}}
-        properties["Global Rating"] = {"number": rating}
+        properties["Synopsis"]          = {"rich_text": []} if not description else {
+                                            "rich_text": [{"text": {"content": description[:2000]}}]}
+        properties["Release date"]      = {"date": None} if not release_date else {"date": {"start": release_date}}
+        properties["Global Rating"]     = {"number": np.round(float(rating),1)}
+
+    # Audiovisual
     if media_type == "TV Series" or media_type == "Movie":
-        emoji = "🎬"
+        emoji = "🎞️"
         title = data.get("title") if media_type == "Movie" else data.get("name")
-        # cover = f"https://image.tmdb.org/t/p/original{data.get('backdrop_path')}" if data.get("backdrop_path") else None
         poster = f"https://image.tmdb.org/t/p/original{data.get('poster_path')}" if data.get("poster_path") else None
         genres = data.get("genres", [])
         status = data.get("status")
@@ -144,15 +146,16 @@ def to_notion(data, media_type, page_id=None):
             "files": [{"type": "external", "name": "Cover", "external": {"url": poster}}]}
         properties["Status"] = {"select": None} if not status else {"select": {"name": status}}
         properties["Genre"] = {"multi_select": genres or []}
-        properties["Writer"] = {"multi_select": writers or []}
-        properties["Director"] = {"multi_select": directors or []}
+        properties["Writer/Developer"] = {"multi_select": writers or []}
+        properties["Director/Publisher"] = {"multi_select": directors or []}
         properties["Synopsis"] = {"rich_text": []} if not synopsis else {"rich_text": [{"text": {"content": synopsis}}]}
         properties["Streaming"] = {"multi_select": streaming or []}
         properties["Release date"] = {"date": None} if not release_date else {"date": {"start": release_date}}
-        properties["Global Rating"] = {"number": global_rating or 0}
+        properties["Global Rating"] = {"number": np.round(global_rating,1) or 0}
 
         # TV Series specific fields
         if media_type == "TV Series":
+            emoji = "🎬"
             episodes = data.get("number_of_episodes", 0)
             seasons = data.get("number_of_seasons", 0)
             next_episode = data.get("next_episode_to_air", {})
@@ -176,7 +179,6 @@ def to_notion(data, media_type, page_id=None):
             else:
                 properties["Upcoming episode"] = {"rich_text": []}
                 properties["Next air date"] = {"date": None}
-
     payload = {"properties": properties}
     if cover_url:   payload["cover"] = {"type": "external", "external": {"url": cover_url}}
     if poster:      payload["cover"] = {"type": "external", "external": {"url": poster}}

@@ -31,7 +31,7 @@ async def search_igdb_game(title):
     # Construct the search for IGDB
     query = (f'search "{title}"; fields name, summary, storyline, cover.url, first_release_date, rating,'
              f'aggregated_rating, genres.name, platforms.name, involved_companies.company.name,'
-             f'involved_companies.developer, involved_companies.publisher, age_ratings.rating, age_ratings.category;')
+             f'involved_companies.developer, involved_companies.publisher;')
 
     url = "https://api.igdb.com/v4/games"
     async with aiohttp.ClientSession() as session:
@@ -39,6 +39,7 @@ async def search_igdb_game(title):
             if response.status == 200:
                 data = await response.json()
                 if data and len(data) > 0:
+                    print(data)
                     return process_igdb_game(data[0])
     return None
 
@@ -201,17 +202,12 @@ def process_rawg_game(game_data):
         "genres": genres,
         "platforms": platforms,
         "rating": game_data.get('rating', 0),
-        "metacritic": game_data.get('metacritic'),
         "description": game_data.get('description_raw', '')
     }
 
 def search_game(search_query):
-    try:
-        game_data = asyncio.run(search_igdb_game(search_query))
-        if game_data:
-            return game_data
-    except Exception as e:
-        print(f"Error searching IGDB: {str(e)}")
+
+    # Search the game in RAWG
     try:
         rawg_url = f"https://api.rawg.io/api/games?key={RAWG_API_KEY}&search={quote(search_query)}&page_size=1"
         rawg_response = requests.get(rawg_url, timeout=10)
@@ -228,4 +224,10 @@ def search_game(search_query):
     except Exception as e:
         print(f"Error searching RAWG: {str(e)}")
 
-    # Or IGDB
+    # Search the game in IGDB
+    try:
+        game_data = asyncio.run(search_igdb_game(search_query))
+        if game_data:
+            return game_data
+    except Exception as e:
+        print(f"Error searching IGDB: {str(e)}")

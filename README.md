@@ -1,9 +1,9 @@
 # Notion media updater
 
-This python project has as objective read an notion database, retrieve it's
-contents, and, based on the data written on in it, fill some useful information.
+This python project has as a goal read a notion database, retrieve its contents, and, based on the data written on in
+it, fill some useful information.
 
-Currently, it's configured to look for **TV series, movies, games and ~~books~~**
+Currently, it's configured to look for **TV series, movies, games, and ~~books~~**
 The sources are:
 - **Movies and TV shows:** [TMDB](https://www.themoviedb.org/)
 - **Games:** [IGDB](https://www.igdb.com/) and [RAWG](https://rawg.io/)
@@ -12,7 +12,7 @@ The sources are:
 
 ## ToDo:
 
-- [ ] Implement and test APIs
+- [X] Implement and test APIs
   - [X] TV and movies
   - [X] Games
   - [ ] ~~Books~~
@@ -20,15 +20,17 @@ The sources are:
   - [X] TV and movies
   - [ ] Games
   - [ ] ~~Books~~
-- [ ] Create Notion model
-- [ ] Publish Notion connection
-- [ ] Automate adding databases
-- [ ] Prepare model, connection and form
-- [ ] Make it public
+- [X] Create a Notion model
+- [ ] Prepare model
 - [ ] Make the fields optional
 - [ ] Optimize and limit API calls
 - [ ] Upload local reviews to Letterboxd
+- [ ] ~~Publish Notion connectio~~
+- [ ] ~~Automate adding databases~~
 
+
+Some of these tasks are way harder to implement than I thought, and I don't have the recourses to do them right now.
+For now, this will only be a local project that you need to input the API keys and else to use.
 
 ## How to use (may change)
 
@@ -41,12 +43,14 @@ The sources are:
 
 ## Environment variables
 
-There are some things that need to be done before using this code, you will need to get the following keys in these websites:
+There are some things that need to be done before using this code, you will need to get the following keys in these
+websites:
 - [TMDB](https://www.themoviedb.org/login?to=read_me&redirect=%2Freference%2Fintro%2Fgetting-started)
 - [IGDB](https://api-docs.igdb.com/#getting-started)
 - [RAWG](https://rawg.io/apidocs)
 
-Then, you will need to create a file named ```.env``` in the same folder that this is downloaded, and fill the file as shown below
+Then, you will need to create a file named ```.env``` in the same folder that this is downloaded, and fill the file
+as shown below
 
 ```
 RAWG_API_KEY = "RAWG key here"
@@ -61,18 +65,35 @@ DATABASE_ID = "your ID here"
 
 ## Notes
 
-For now, this is only a local side-project, the Notion's connection is not public and it's my first time really meddling with APIs and even Notion at all. If anybody more experienced want to help of even use this to improve this code, you are  welcome, but I'll keep trying to make this work
+For now, this is only a local side-project, the Notion's connection is not public, and it's my first time really
+meddling with APIs and even Notion at all. If anybody more experienced wants to help of even use this to improve
+this code, you are welcome, but I'll keep trying to make this work
 
 Most of the implementations are not in their best shape yet, but the books
 one is almost completely broken, if you want to use it, I can't recommend
 enough for you to BACK UP YOUR DATABASE before trying iy (even though, if you're
 able to get the API keys to activate it, you probably have more knowledge in
-this than me :P)     
+this than me:P)     
+
+(A lot of this code was developed by Claude AI, but I rewrote most of it and pieced it together, I may try to
+remake it without Claude's)
 
 ## About book support
 
-Games, movies and series are not that hard, they don't have a lot of different versions, but the same book can have thousands of versions and even re-releases as graphic novels, with or without the name of the series and the rest
+Games, movies, and series are easy to search as they don't have a lot of different versions, but the same book
+can have thousands of versions.
 
-Because of this, books like Percy Jackson and The lightning thief return A LOT of results, with the first release not even showing depending on how it was searched. 
+Because of this, books like Percy Jackson and The lightning thief return A LOT of results, with the first release not
+even showing depending on how it was searched. Some of the results are were:
+- The Lightning Thief
+- Percy Jackson and the Olympians: The Lightning Thief
+- Percy Jackson and the Olympians: The Lightning Thief (Book 1)
+- Percy Jackson and the Olympians: The Lightning Thief (Graphic Novel)
+- Percy Jackson and the Olympians: The Lightning Thief (Book 1) (Graphic Novel)
+- ...
 
-For that reason and, you know, collage, I will end the inclusion of books, but the code is open and won't be deleted, and you are invited to try finding a way that makes everyone happy and has good results.
+Because of this, and demands from college, the search for books is not in the best shape, so I decided to
+remove it for now.
+
+The code is open and won't be deleted, and you are invited to try finding a way that makes everyone happy and has
+good results.

@@ -59,7 +59,8 @@ def process_google_books(data):
     for i in range(len(data)):
         try:
             date = int(str(data[i]['volumeInfo']['publishedDate'])[:4])
-        except:
+        except Exception as e:
+            print(e)
             continue
         if first > date:
             first = i
@@ -78,7 +79,7 @@ def process_google_books(data):
 
     # Extract publication date
     publish_date = book.get('publishedDate', '')
-    if publish_date and len(publish_date) == 4:  # If only year is provided
+    if publish_date and len(publish_date) == 4:  # If only the year is provided
         publish_date += "-01-01"
 
     # Extract categories/genres

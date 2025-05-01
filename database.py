@@ -6,7 +6,7 @@ from modules.game import *
 
 def get_all_notion_entries():
     """
-    Return the titles, types and release dates of all notion entries
+    Return the titles, types, and release dates of all notion entries
     """
     try:
         url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
@@ -27,8 +27,16 @@ def get_all_notion_entries():
                 type_prop = page["properties"].get("Type", {}).get("select", {})
                 release_date_prop = page["properties"].get("Release date", {}).get("date", {})
                 page_id = page["id"]
-
-                if title_prop:
+                update = page["properties"].get("Update",{}).get("select",{})
+                if update:
+                    update = update.get("name")
+                    if update == "Yes":
+                        update = True
+                    else:
+                        update = False
+                else:
+                    update = True
+                if title_prop and update:
                     name = title_prop[0]["text"]["content"]
                     media_type = type_prop.get("name") if type_prop else None
                     release_date = release_date_prop.get("start") if release_date_prop else None
@@ -71,7 +79,9 @@ def search(search_query, media_type=None, release_date=None, page_id=None):
 
         if result:
             to_notion(result, media_type, page_id)
-    
+            return None
+        return None
+
     except Exception as e:
         print(f"❌ Error processing '{search_query}': {e}")
         return None
@@ -91,7 +101,6 @@ def main():
         for i, future in enumerate(concurrent.futures.as_completed(futures)):
             try:
                 future.result()  # Get the result of the future (or exception if one was raised)
-                # print(f"Progress: {i+1}/{len(entries)} entries processed")
             except Exception as e:
                 print(f"Error processing entry: {e}")
     

@@ -9,7 +9,7 @@ igdb_token = None
 
 def get_igdb_access_token():
     """
-    Obtain access token for IGDB API (Twitch)
+    Get the access token for IGDB API (Twitch)
     """
     url = f"https://id.twitch.tv/oauth2/token?client_id={IGDB_CLIENT_ID}&client_secret={IGDB_CLIENT_SECRET}&grant_type=client_credentials"
     response = requests.post(url)
@@ -23,7 +23,7 @@ async def search_igdb_game(title):
 
     global igdb_token, igdb_headers
 
-    # Get token if there's none
+    # Get a token if there's none
     if not igdb_token:
         igdb_token = get_igdb_access_token()
         igdb_headers["Authorization"] = f"Bearer {igdb_token}"
@@ -77,7 +77,7 @@ def process_igdb_game(game_data):
     if game_data.get('first_release_date'):
         release_date = datetime.fromtimestamp(game_data['first_release_date']).strftime('%Y-%m-%d')
 
-    # Choose storyline over summary if available
+    # Choose a storyline over summary if available
     description = game_data.get('storyline') or game_data.get('summary', '')
 
     # Process cover URL
@@ -115,12 +115,12 @@ def process_igdb_game(game_data):
                     screenshot_url = f"https:{screenshot_url}".replace('t_thumb', 't_1080p')
                 alternative_images.append(screenshot_url)
 
-    # Use the first screenshot as background image if available
+    # Use the first screenshot as the background image if available
     background_image = None
     if alternative_images:
         background_image = alternative_images[0]
 
-    # Prioritize box art if found, otherwise use cover, then fall back to first alternative image
+    # Prioritize box art if found, otherwise use cover, then fall back to the first alternative image
     final_cover_url = box_art or cover_url or background_image
 
     return {
@@ -164,7 +164,7 @@ def process_rawg_game(game_data):
     # Check for cover image in different possible locations
     cover_url = None
 
-    # Try to find cover image in screenshots if available
+    # Try to find the cover image in screenshots if available
     if game_data.get('screenshots') and len(game_data['screenshots']) > 0:
         for screenshot in game_data['screenshots']:
             # Look for images that might be covers (usually with "cover" in the filename)
@@ -201,7 +201,7 @@ def process_rawg_game(game_data):
         "background_url": game_data.get('background_image'),
         "genres": genres,
         "platforms": platforms,
-        "rating": game_data.get('rating', 0),
+        "rating": game_data.get('rating', 0)*2,
         "description": game_data.get('description_raw', '')
     }
 
@@ -229,5 +229,7 @@ def search_game(search_query):
         game_data = asyncio.run(search_igdb_game(search_query))
         if game_data:
             return game_data
+        return None
     except Exception as e:
         print(f"Error searching IGDB: {str(e)}")
+        return None

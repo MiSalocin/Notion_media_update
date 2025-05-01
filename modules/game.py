@@ -7,16 +7,7 @@ from datetime import datetime
 
 igdb_token = None
 
-def get_igdb_access_token():
-    """
-    Get the access token for IGDB API (Twitch)
-    """
-    url = f"https://id.twitch.tv/oauth2/token?client_id={IGDB_CLIENT_ID}&client_secret={IGDB_CLIENT_SECRET}&grant_type=client_credentials"
-    response = requests.post(url)
-    data = response.json()
-    return data.get("access_token")
-
-async def search_igdb_game(title):
+async def search_igdb_game(title, release_date=None):
     """
     Search for a game using the IGDB API
     """
@@ -25,13 +16,30 @@ async def search_igdb_game(title):
 
     # Get a token if there's none
     if not igdb_token:
-        igdb_token = get_igdb_access_token()
+        url = (f"https://id.twitch.tv/oauth2/token?client_id={IGDB_CLIENT_ID}"
+               f"&client_secret={IGDB_CLIENT_SECRET}"
+               f"&grant_type=client_credentials")
+        response = requests.post(url)
+        igdb_token = response.json().get("access_token")
         igdb_headers["Authorization"] = f"Bearer {igdb_token}"
 
     # Construct the search for IGDB
-    query = (f'search "{title}"; fields name, summary, storyline, cover.url, first_release_date, rating,'
-             f'aggregated_rating, genres.name, platforms.name, involved_companies.company.name,'
-             f'involved_companies.developer, involved_companies.publisher;')
+    query = (f'search "{title}";'
+             f'fields total_rating,'
+                    f'total_rating_count,'
+                    f'name,'
+                    f'summary,'
+                    f'rating,'
+                    f'cover.url,'
+                    f'storyline,'
+                    f'genres.name,'
+                    f'artworks.url,'
+                    f'platforms.name,'
+                    f'aggregated_rating,'
+                    f'first_release_date,'
+                    f'involved_companies.developer,'
+                    f'involved_companies.publisher,'
+                    f'involved_companies.company.name;')
 
     url = "https://api.igdb.com/v4/games"
     async with aiohttp.ClientSession() as session:
@@ -39,43 +47,31 @@ async def search_igdb_game(title):
             if response.status == 200:
                 data = await response.json()
                 if data and len(data) > 0:
-                    print(data)
-                    return process_igdb_game(data[0])
+                    data = choose_best_result(data, title, release_date)
+                    return process_igdb_game(data)
     return None
 
 def process_igdb_game(game_data):
     """
     Process IGDB API response for a game
     """
-    # Extract publishers/devs
-    publishers = []
-    developers = []
 
-    if game_data.get('involved_companies'):
-        for company in game_data['involved_companies']:
-            company_name = company.get('company', {}).get('name', '')
-            if company_name:
-                if company.get('developer'):
-                    developers.append({"name": company_name})
-                if company.get('publisher'):
-                    publishers.append({"name": company_name})
+    genres      = [{"name": genre['name']}
+        for genre in game_data.get('genres', [])]
 
-    # Extract platforms
-    platforms = []
-    for platform in game_data.get('platforms', []):
-        if platform.get('name'):
-            platforms.append({"name": platform['name']})
+    platforms   = [{"name": platform['name']}
+        for platform in game_data.get('platforms', [])]
 
-    # Extract genres
-    genres = []
-    for genre in game_data.get('genres', []):
-        if genre.get('name'):
-            genres.append({"name": genre['name']})
+    developers  = [{"name": company.get('company', {}).get('name')}
+        for company in game_data.get('involved_companies', [])
+        if company.get('developer') and company.get('company', {}).get('name')]
 
-    # Extract release dates and convert from timestamp Unix to ISO
-    release_date = None
-    if game_data.get('first_release_date'):
-        release_date = datetime.fromtimestamp(game_data['first_release_date']).strftime('%Y-%m-%d')
+    publishers  = [{"name": company.get('company', {}).get('name')}
+        for company in game_data.get('involved_companies', [])
+        if company.get('publisher') and company.get('company', {}).get('name')]
+
+    release_date = datetime.fromtimestamp(game_data['first_release_date']).strftime('%Y-%m-%d')\
+        if game_data.get('first_release_date') else None
 
     # Choose a storyline over summary if available
     description = game_data.get('storyline') or game_data.get('summary', '')
@@ -85,7 +81,7 @@ def process_igdb_game(game_data):
     if game_data.get('cover', {}).get('url'):
         cover_url = game_data['cover']['url']
         if cover_url.startswith('//'):
-            cover_url = f"https:{cover_url}".replace('t_thumb', 't_cover_big')
+            cover_url = f"https:{cover_url}".replace('t_thumb', 't_1080p')
 
     alternative_images = []
 
@@ -124,44 +120,27 @@ def process_igdb_game(game_data):
     final_cover_url = box_art or cover_url or background_image
 
     return {
-        "title": game_data.get('name', ''),
-        "developers": developers,
-        "publishers": publishers,
-        "release_date": release_date,
-        "cover_url": final_cover_url,
-        "backdrop_url": background_image,
-        "genres": genres,
-        "platforms": platforms,
-        "rating": game_data.get('rating') / 10 if game_data.get('rating') else 0,
-        "metacritic": game_data.get('aggregated_rating'),
-        "description": description
+        "genres":           genres,
+        "title":            game_data.get('name', ''),
+        "rating":           game_data.get('rating') / 10 if game_data.get('rating') else 0,
+        "cover_url":        final_cover_url,
+        "platforms":        platforms,
+        "developers":       developers,
+        "publishers":       publishers,
+        "description":      description,
+        "release_date":     release_date,
+        "background_url":   background_image,
     }
 
 def process_rawg_game(game_data):
     """
     Process RAWG API response for a game
     """
-    # Extract publishers/devs.
-    publishers = []
-    for pub in game_data.get('publishers', []): publishers.append({"name": pub["name"]})
+    publishers = [{"name": pub["name"]} for pub in game_data.get('publishers', [])]
+    developers = [{"name": dev["name"]} for dev in game_data.get('developers', [])]
+    platforms  = [{"name": platform['platform']['name']} for platform in game_data.get('platforms', [])]
+    genres     = [{"name": genre["name"]} for genre in game_data.get('genres', [])]
 
-    developers = []
-    for dev in game_data.get('developers', []): developers.append({"name": dev["name"]})
-
-    # Extract platforms
-    platforms = []
-    for platform in game_data.get('platforms', []):
-        if platform.get('platform'): platforms.append({"name": platform['platform']['name']})
-
-    # Extract genres
-    genres = []
-    for genre in game_data.get('genres', []):
-        genres.append({"name": genre["name"]})
-
-    # Extract release dates
-    release_date = game_data.get('released')
-
-    # Check for cover image in different possible locations
     cover_url = None
 
     # Try to find the cover image in screenshots if available
@@ -174,14 +153,14 @@ def process_rawg_game(game_data):
                 break
 
     # If no cover found in screenshots, check for a different image source
-    if not cover_url and game_data.get('images'):
+    elif game_data.get('images'):
         for image in game_data['images']:
             if image.get('type') == 'cover' or 'cover' in image.get('name', '').lower():
                 cover_url = image.get('image')
                 break
 
     # If still no cover found, look for box art or official art
-    if not cover_url and game_data.get('stores'):
+    elif game_data.get('stores'):
         for store in game_data['stores']:
             store_info = store.get('store', {})
             if store_info.get('image_background') and 'cover' in store_info.get('slug', ''):
@@ -193,43 +172,44 @@ def process_rawg_game(game_data):
         cover_url = game_data.get('background_image')
 
     return {
-        "title": game_data.get('name', ''),
-        "developers": developers,
-        "publishers": publishers,
-        "release_date": release_date,
-        "cover_url": cover_url,
-        "background_url": game_data.get('background_image'),
-        "genres": genres,
-        "platforms": platforms,
-        "rating": game_data.get('rating', 0)*2,
-        "description": game_data.get('description_raw', '')
+        "title":          game_data.get('name', ''),
+        "rating":         game_data.get('rating', 0)*2,
+        "genres":         genres,
+        "cover_url":      cover_url,
+        "platforms":      platforms,
+        "developers":     developers,
+        "publishers":     publishers,
+        "release_date":   game_data.get('released'),
+        "description":    game_data.get('description_raw', ''),
+        "background_url": game_data.get('background_image', ''),
     }
 
-def search_game(search_query):
-
-    # Search the game in RAWG
+def search_game(search_query, release_date=None):
     try:
-        rawg_url = f"https://api.rawg.io/api/games?key={RAWG_API_KEY}&search={quote(search_query)}&page_size=1"
+        game_data = asyncio.run(search_igdb_game(search_query, release_date))
+        if game_data:
+            return game_data
+        return None
+    except Exception as e:
+        print(f"Error searching IGDB: {str(e)}")
+
+
+    try:
+        rawg_url = f"https://api.rawg.io/api/games?key={RAWG_API_KEY}&search={quote(search_query)}&page_size=10"
         rawg_response = requests.get(rawg_url, timeout=10)
         rawg_data = rawg_response.json()
 
         if rawg_data.get("results") and len(rawg_data["results"]) > 0:
-            game_id = rawg_data["results"][0]["id"]
+            game_data = choose_best_result(rawg_data["results"], search_query, release_date)
+            game_id = game_data["id"]
             detail_url = f"https://api.rawg.io/api/games/{game_id}?key={RAWG_API_KEY}"
             detail_response = requests.get(detail_url, timeout=10)
             game_details = detail_response.json()
 
             game_data = process_rawg_game(game_details)
             return game_data
+        return None
     except Exception as e:
         print(f"Error searching RAWG: {str(e)}")
+        return None
 
-    # Search the game in IGDB
-    try:
-        game_data = asyncio.run(search_igdb_game(search_query))
-        if game_data:
-            return game_data
-        return None
-    except Exception as e:
-        print(f"Error searching IGDB: {str(e)}")
-        return None

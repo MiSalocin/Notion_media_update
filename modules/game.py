@@ -42,6 +42,7 @@ async def search_igdb_game(title, release_date=None):
                     f'involved_companies.company.name;')
 
     url = "https://api.igdb.com/v4/games"
+
     async with aiohttp.ClientSession() as session:
         async with session.post(url, headers=igdb_headers, data=query) as response:
             if response.status == 200:
@@ -51,85 +52,82 @@ async def search_igdb_game(title, release_date=None):
                     return process_igdb_game(data)
     return None
 
-def process_igdb_game(game_data):
+def process_igdb_game(data):
     """
     Process IGDB API response for a game
     """
 
     genres      = [{"name": genre['name']}
-        for genre in game_data.get('genres', [])]
+                   for genre in data.get('genres', [])]
 
     platforms   = [{"name": platform['name']}
-        for platform in game_data.get('platforms', [])]
+                   for platform in data.get('platforms', [])]
 
     developers  = [{"name": company.get('company', {}).get('name')}
-        for company in game_data.get('involved_companies', [])
-        if company.get('developer') and company.get('company', {}).get('name')]
+                   for company in data.get('involved_companies', [])
+                   if company.get('developer') and company.get('company', {}).get('name')]
 
     publishers  = [{"name": company.get('company', {}).get('name')}
-        for company in game_data.get('involved_companies', [])
-        if company.get('publisher') and company.get('company', {}).get('name')]
+                   for company in data.get('involved_companies', [])
+                   if company.get('publisher') and company.get('company', {}).get('name')]
 
-    release_date = datetime.fromtimestamp(game_data['first_release_date']).strftime('%Y-%m-%d')\
-        if game_data.get('first_release_date') else None
+    release_date = datetime.fromtimestamp(data['first_release_date']).strftime('%Y-%m-%d')\
+        if data.get('first_release_date') else None
 
     # Choose a storyline over summary if available
-    description = game_data.get('storyline') or game_data.get('summary', '')
+    description = data.get('storyline') or data.get('summary', '')
 
     # Process cover URL
-    cover_url = None
-    if game_data.get('cover', {}).get('url'):
-        cover_url = game_data['cover']['url']
-        if cover_url.startswith('//'):
-            cover_url = f"https:{cover_url}".replace('t_thumb', 't_1080p')
+    bg_img = None
+    cover = None
 
-    alternative_images = []
+    if data.get('cover', {}).get('url'):
+        cover = data['cover']['url']
+        if cover.startswith('//'):
+            cover = f"https:{cover}".replace('t_thumb', 't_1080p')
+
 
     # Check for box art in artworks
-    box_art = None
-    if game_data.get('artworks'):
-        for artwork in game_data['artworks']:
-            artwork_url = artwork.get('url')
-            if artwork_url:
-                # Convert relative URLs to absolute and increase image size
-                if artwork_url.startswith('//'):
-                    artwork_url = f"https:{artwork_url}".replace('t_thumb', 't_1080p')
-                alternative_images.append(artwork_url)
+    if data.get('artworks'):
+        bg_img = data['artworks'][0]['url']
+        if bg_img.startswith('//'):
+            bg_img = f"https:{bg_img}".replace('t_thumb', 't_1080p')
 
-                # Look for box art in artwork names or tags
-                artwork_name = artwork.get('name', '').lower()
-                if artwork_name and ('box' in artwork_name or 'cover' in artwork_name or 'poster' in artwork_name):
-                    box_art = artwork_url
+        if not cover:
+            for artwork in data['artworks']:
+                artwork_url = artwork.get('url')
+                if artwork_url:
+                    if artwork_url.startswith('//'):
+                        artwork_url = f"https:{artwork_url}".replace('t_thumb', 't_1080p')
+
+                    artwork_name = artwork.get('name', '').lower()
+                    if (not cover and artwork_name and
+                            ('box'    in artwork_name or
+                             'cover'  in artwork_name or
+                             'poster' in artwork_name)):
+                        cover = artwork_url
 
     # Check for screenshots if no box art found
-    if not box_art and game_data.get('screenshots'):
-        for screenshot in game_data['screenshots']:
+    if not bg_img and data.get('screenshots'):
+        for screenshot in data['screenshots']:
             screenshot_url = screenshot.get('url')
             if screenshot_url:
                 # Convert relative URLs to absolute and increase image size
                 if screenshot_url.startswith('//'):
                     screenshot_url = f"https:{screenshot_url}".replace('t_thumb', 't_1080p')
-                alternative_images.append(screenshot_url)
-
-    # Use the first screenshot as the background image if available
-    background_image = None
-    if alternative_images:
-        background_image = alternative_images[0]
-
-    # Prioritize box art if found, otherwise use cover, then fall back to the first alternative image
-    final_cover_url = box_art or cover_url or background_image
+                bg_img = screenshot_url
 
     return {
         "genres":           genres,
-        "title":            game_data.get('name', ''),
-        "rating":           game_data.get('rating') / 10 if game_data.get('rating') else 0,
-        "cover_url":        final_cover_url,
+        "title":            data.get('name', ''),
+        "rating":           data.get('rating') / 10 if data.get('rating') else 0,
+        "cover":            cover,
         "platforms":        platforms,
         "developers":       developers,
         "publishers":       publishers,
         "description":      description,
         "release_date":     release_date,
-        "background_url":   background_image,
+        "background":       bg_img,
     }
 
 def process_rawg_game(game_data):
@@ -141,7 +139,7 @@ def process_rawg_game(game_data):
     platforms  = [{"name": platform['platform']['name']} for platform in game_data.get('platforms', [])]
     genres     = [{"name": genre["name"]} for genre in game_data.get('genres', [])]
 
-    cover_url = None
+    cover = None
 
     # Try to find the cover image in screenshots if available
     if game_data.get('screenshots') and len(game_data['screenshots']) > 0:
@@ -149,14 +147,14 @@ def process_rawg_game(game_data):
             # Look for images that might be covers (usually with "cover" in the filename)
             image_url = screenshot.get('image')
             if image_url and ('cover' in image_url.lower() or 'box' in image_url.lower()):
-                cover_url = image_url
+                cover = image_url
                 break
 
     # If no cover found in screenshots, check for a different image source
     elif game_data.get('images'):
         for image in game_data['images']:
             if image.get('type') == 'cover' or 'cover' in image.get('name', '').lower():
-                cover_url = image.get('image')
+                cover = image.get('image')
                 break
 
     # If still no cover found, look for box art or official art
@@ -164,24 +162,24 @@ def process_rawg_game(game_data):
         for store in game_data['stores']:
             store_info = store.get('store', {})
             if store_info.get('image_background') and 'cover' in store_info.get('slug', ''):
-                cover_url = store_info.get('image_background')
+                cover = store_info.get('image_background')
                 break
 
     # Fall back to background image if no cover found
-    if not cover_url:
-        cover_url = game_data.get('background_image')
+    if not cover:
+        cover = game_data.get('background_image')
 
     return {
         "title":          game_data.get('name', ''),
         "rating":         game_data.get('rating', 0)*2,
         "genres":         genres,
-        "cover_url":      cover_url,
+        "cover":          cover,
         "platforms":      platforms,
         "developers":     developers,
         "publishers":     publishers,
         "release_date":   game_data.get('released'),
         "description":    game_data.get('description_raw', ''),
-        "background_url": game_data.get('background_image', ''),
+        "background":     game_data.get('background_image', ''),
     }
 
 def search_game(search_query, release_date=None):

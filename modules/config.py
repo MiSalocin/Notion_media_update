@@ -66,7 +66,6 @@ def choose_best_result(results, target_title, target_release_date=None):
         if result.get("total_rating_count"): pop_ratio = result.get("total_rating_count")\
                                                 if result.get("total_rating_count") > pop_ratio else pop_ratio
     # Calculate scores for each result
-    print(results)
     for item in results:
 
         item_title = item.get("title", item.get("name", ""))
@@ -92,7 +91,6 @@ def choose_best_result(results, target_title, target_release_date=None):
         popularity_score = min(1.0, float(popularity)/pop_ratio)  # Cap at 1.0
 
         final_score = (0.5 * title_score) + (0.3 * date_score) + (0.2 * popularity_score)
-        print(final_score, item_title, popularity)
         # Check if this is the best match so far
         if final_score > best_match[0]:
             best_match = [final_score, item]
@@ -202,8 +200,8 @@ def to_notion(data, media_type, page_id=None):
         title          = data.get("title", "")
         developers     = data.get("developers", [])
         release_date   = data.get("release_date", "")
-        background_url = data.get("background_url", "")
-        poster         = data.get("cover_url", "")
+        cover          = data.get("background", "")
+        bg_url         = data.get("cover", "")
         genres         = data.get("genres", [])
         rating         = data.get("rating", 0)
         description    = data.get("description", "")
@@ -212,10 +210,12 @@ def to_notion(data, media_type, page_id=None):
         # Add game properties
         properties["Name"]              = {"title": [{"text": {"content": title}}]}
         properties["Year"]              = {"rich_text": [{"text": {"content": year}}]}
-        properties["Image"]             = {"files": []} if not background_url else {"files": [{"type": "external", "name": "Cover", "external": {"url": background_url}}]}
+        properties["Image"]             = {"files": []} if not bg_url else {"files":
+                                                   [{"type": "external", "name": "Cover", "external": {"url": bg_url}}]}
         properties["Writer/Developer"]  = {"multi_select": developers}
         properties["Genre"]             = {"multi_select": genres}
-        properties["Synopsis"]          = {"rich_text": []} if not description else {"rich_text": [{"text": {"content": description[:2000]}}]}
+        properties["Synopsis"]          = {"rich_text": []} if not description else {"rich_text": [{"text":
+                                                                                      {"content": description[:2000]}}]}
         properties["Release date"]      = {"date": None} if not release_date else {"date": {"start": release_date}}
         properties["Global Rating"]     = {"number": np.round(float(rating),1)}
         properties["Update"]            = {"select": {"name": "No"}}
@@ -224,8 +224,11 @@ def to_notion(data, media_type, page_id=None):
     if media_type == "TV Series" or media_type == "Movie":
         emoji         = "🎞️"
         title         = data.get("title") if media_type == "Movie" else data.get("name", "")
-        cover         = f"https://image.tmdb.org/t/p/original{data.get('backdrop_path')}" if data.get("backdrop_path") else f"https://image.tmdb.org/t/p/original{data.get('poster_path')}" if data.get("poster_path") else None
-        poster        = f"https://image.tmdb.org/t/p/original{data.get('poster_path')}" if data.get("poster_path") else None
+        cover         = f"https://image.tmdb.org/t/p/original{data.get('backdrop_path')}"\
+            if data.get("backdrop_path") else f"https://image.tmdb.org/t/p/original{data.get('poster_path')}"\
+            if data.get("poster_path")   else None
+        poster        = f"https://image.tmdb.org/t/p/original{data.get('poster_path')}"\
+                                                          if data.get("poster_path") else None
         genres        = data.get("genres", [])
         status        = data.get("status")
         synopsis      = data.get("overview")
@@ -258,12 +261,14 @@ def to_notion(data, media_type, page_id=None):
         properties["Update"]             = {"select": {"name": "No"}}
         properties["Name"]               = {"title": [{"text": {"content": title or ""}}]}
         properties["Year"]               = {"rich_text": [{"text": {"content": year or ""}}]}
-        properties["Image"]              = {"files": []} if not poster else {"files": [{"type": "external", "name": "Cover", "external": {"url": poster}}]}
+        properties["Image"]              = {"files": []} if not poster else {"files":
+                                                  [{"type": "external", "name": "Cover", "external": {"url": poster}}]}
         properties["Status"]             = {"select": None} if not status else {"select": {"name": status}}
         properties["Genre"]              = {"multi_select": genres or []}
         properties["Writer/Developer"]   = {"multi_select": writers or []}
         properties["Director/Publisher"] = {"multi_select": directors or []}
-        properties["Synopsis"]           = {"rich_text": []} if not synopsis else {"rich_text": [{"text": {"content": synopsis}}]}
+        properties["Synopsis"]           = {"rich_text": []} if not synopsis else {"rich_text": [{"text":
+                                                                                           {"content": synopsis}}]}
         properties["Streaming/Platforms"]          = {"multi_select": streaming or []}
         properties["Release date"]       = {"date": None} if not release_date else {"date": {"start": release_date}}
         properties["Global Rating"]      = {"number": np.round(global_rating,1) or 0}

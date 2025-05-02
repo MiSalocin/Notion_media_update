@@ -7,32 +7,36 @@ Currently, it's configured to look for **TV series, movies, games, and ~~books~~
 The sources are:
 - **Movies and TV shows:** [TMDB](https://www.themoviedb.org/)
 - **Games:** [IGDB](https://www.igdb.com/) and [RAWG](https://rawg.io/)
-- ~~**Books:** [Olen Library](https://openlibrary.org/),
-[Google books](https://books.google.com/?) and [GoodReads](https://www.goodreads.com/)\*~~
 
 ## ToDo:
 
 - [X] Implement and test APIs
   - [X] TV and movies
   - [X] Games
-  - [ ] ~~Books~~
-- [ ] Improve data search
+- [X] Improve data search
   - [X] TV and movies
-  - [ ] Games
-  - [ ] ~~Books~~
+  - [X] Games
 - [X] Create a Notion model
-- [ ] Prepare model
+- [ ] Add status for games
+- [ ] Update status for current series
+- [ ] Add platforms for games
+- [ ] Writers and directors for TV Shows
+- [ ] Filter streaming services
 - [ ] Make the fields optional
-- [ ] Optimize and limit API calls
+- [ ] Review publishers code for games
+- [ ] Review seasons/episodes
+- [ ] Optimize and limit API calls (may not need)
+  - [ ] TMDB
+  - [ ] IGDB
+  - [ ] RAWG
+  - [ ] Notion
 - [ ] Upload local reviews to Letterboxd
-- [ ] ~~Publish Notion connectio~~
-- [ ] ~~Automate adding databases~~
 
 
 Some of these tasks are way harder to implement than I thought, and I don't have the recourses to do them right now.
 For now, this will only be a local project that you need to input the API keys and else to use.
 
-## How to use (may change)
+# How to use (may change)
 
 1. Make a copy of [this](about:blank) database
 2. Create a private notion integration in [this](https://www.notion.so/my-integrations) link
@@ -63,7 +67,7 @@ PAGE_ID = "Page ID here"
 DATABASE_ID = "your ID here"
 ```
 
-## Notes
+# Notes
 
 For now, this is only a local side-project, the Notion's connection is not public, and it's my first time really
 meddling with APIs and even Notion at all. If anybody more experienced wants to help of even use this to improve
@@ -78,7 +82,7 @@ this than me:P)
 (A lot of this code was developed by Claude AI, but I rewrote most of it and pieced it together, I may try to
 remake it without Claude's)
 
-## About book support
+# About book support
 
 Games, movies, and series are easy to search as they don't have a lot of different versions, but the same book
 can have thousands of versions.

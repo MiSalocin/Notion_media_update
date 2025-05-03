@@ -194,7 +194,8 @@ def search_game(search_query, release_date=None):
         if game_data:
             return game_data
     except Exception as e:
-        print(f"Error searching IGDB: {str(e)}")
+        print(f"Error searching IGDB: {str(e)}, searching RAWG...")
+    print("Game not found in IGDB, searching RAWG...")
 
 
     try:

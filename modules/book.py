@@ -1,3 +1,4 @@
+import json
 import re
 
 import aiohttp
@@ -11,17 +12,18 @@ def process_open_library(data):
     """
     Process Open Library API response
     """
+    print(json.dumps(data, indent=4))
     if not data.get('docs') or len(data['docs']) == 0:
         return None
     book = data['docs'][0]
 
     # Extract author names
     authors = []
+    cover_id = book.get('cover_i')
     for author in book.get('author_name', []):
         authors.append({"name": author})
 
     # Extract cover image
-    cover_id = book.get('cover_i')
     cover_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg" if cover_id else None
 
     # Extract publication date
@@ -54,7 +56,7 @@ def process_google_books(data):
     if not data or len(data) == 0:
         return None
 
-    first = np.Inf
+    first = np.inf
     last = 0
     for i in range(len(data)):
         try:
@@ -185,25 +187,13 @@ async def fetch_goodreads_book(session, title):
                 "isbn": isbn
             }
 
-async def search_book(title):
+async def search_book(search_query, release_date=None):
     """
     Search for a book across multiple APIs and scraping sources
     """
     async with aiohttp.ClientSession() as session:
 
-        # Next try Google Books
-        google_books_url = f"https://www.googleapis.com/books/v1/volumes?q=intitle:{quote(title)}&maxResults=40"
-        async with session.get(google_books_url) as response:
-            if response.status == 200:
-                # print(response)
-                data = await response.json()
-                if data.get('totalItems', 0) > 0:
-                    processed_data = process_google_books(data)
-                    if processed_data:
-                        return processed_data
-
-        # Try Open Library first
-        open_lib_url = f"https://openlibrary.org/search.json?title={quote(title)}"
+        open_lib_url = f"https://openlibrary.org/search.json?title={quote(search_query)}"
         async with session.get(open_lib_url) as response:
             # print(response)
             if response.status == 200:
@@ -213,9 +203,19 @@ async def search_book(title):
                     if processed_data:
                         return {"source": "Open Library", "data": processed_data}
 
-        # Fall back to Goodreads scraping
+        print(f"{search_query} not found in Open library, searching Google Books...")
+        google_books_url = f"https://www.googleapis.com/books/v1/volumes?q=intitle:{quote(search_query)}&maxResults=40"
+        async with session.get(google_books_url) as response:
+            if response.status == 200:
+                # print(response)
+                data = await response.json()
+                if data.get('totalItems', 0) > 0:
+                    processed_data = process_google_books(data)
+                    if processed_data:
+                        return processed_data
+
         try:
-            goodreads_data = await fetch_goodreads_book(session, title)
+            goodreads_data = await fetch_goodreads_book(session, search_query)
             if goodreads_data:
                 return {"source": "Goodreads (scraped)", "data": goodreads_data}
         except Exception as e:

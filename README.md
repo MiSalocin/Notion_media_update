@@ -1,36 +1,33 @@
 # Notion media updater
 
-This python project has as a goal read a notion database, retrieve its contents, and, based on the data written on in
+This python project has as a goal to read a notion database, retrieve its contents, and, based on the data written on in
 it, fill some useful information.
-
+  
 Currently, it's configured to look for **TV series, movies, games, and ~~books~~**
 The sources are:
 - **Movies and TV shows:** [TMDB](https://www.themoviedb.org/)
 - **Games:** [IGDB](https://www.igdb.com/) and [RAWG](https://rawg.io/)
 
 ## ToDo:
-
 - [X] Implement and test APIs
-  - [X] TV and movies
-  - [X] Games
 - [X] Improve data search
-  - [X] TV and movies
-  - [X] Games
 - [X] Create a Notion model
-- [ ] Add status for games
-- [ ] Update status for current series
-- [ ] Add platforms for games
+- [X] Add platforms for games
+- [X] Review publishers code for games
+- [X] Add status for games
+- [X] Filter streaming services
+- [X] Update status for current series
+  - [ ] Change from waiting to in progress
+  - [X] Always search if the series is not finished
 - [ ] Writers and directors for TV Shows
-- [ ] Filter streaming services
-- [ ] Make the fields optional
-- [ ] Review publishers code for games
 - [ ] Review seasons/episodes
+- [ ] Make the fields optional
+- [ ] Upload local reviews to Letterboxd
 - [ ] Optimize and limit API calls (may not need)
   - [ ] TMDB
   - [ ] IGDB
   - [ ] RAWG
   - [ ] Notion
-- [ ] Upload local reviews to Letterboxd
 
 
 Some of these tasks are way harder to implement than I thought, and I don't have the recourses to do them right now.
@@ -39,7 +36,7 @@ For now, this will only be a local project that you need to input the API keys a
 # How to use (may change)
 
 1. Make a copy of [this](about:blank) database
-2. Create a private notion integration in [this](https://www.notion.so/my-integrations) link
+2. Create a private notion of integration in [this](https://www.notion.so/my-integrations) link
 3. Connect your integration as a connection to the copied database.
 4. Create and fill the ```.env``` file as described below
 5. Run ```database.py```
@@ -47,7 +44,7 @@ For now, this will only be a local project that you need to input the API keys a
 
 ## Environment variables
 
-There are some things that need to be done before using this code, you will need to get the following keys in these
+There are some things that need to be done before using this code. You will need to get the following keys on these
 websites:
 - [TMDB](https://www.themoviedb.org/login?to=read_me&redirect=%2Freference%2Fintro%2Fgetting-started)
 - [IGDB](https://api-docs.igdb.com/#getting-started)
@@ -70,16 +67,16 @@ DATABASE_ID = "your ID here"
 # Notes
 
 For now, this is only a local side-project, the Notion's connection is not public, and it's my first time really
-meddling with APIs and even Notion at all. If anybody more experienced wants to help of even use this to improve
+meddling with APIs and even Notion at all. If anybody more experienced wants to help to even use this to improve
 this code, you are welcome, but I'll keep trying to make this work
 
 Most of the implementations are not in their best shape yet, but the books
-one is almost completely broken, if you want to use it, I can't recommend
+one is almost completely broken. If you want to use it, I can't recommend
 enough for you to BACK UP YOUR DATABASE before trying iy (even though, if you're
-able to get the API keys to activate it, you probably have more knowledge in
+able to get the API keys to activate it, you probably have more knowledge of 
 this than me:P)     
 
-(A lot of this code was developed by Claude AI, but I rewrote most of it and pieced it together, I may try to
+(A lot of this code was developed by Claude AI, but I rewrote most of it and pieced it together. I may try to
 remake it without Claude's)
 
 # About book support
@@ -88,7 +85,7 @@ Games, movies, and series are easy to search as they don't have a lot of differe
 can have thousands of versions.
 
 Because of this, books like Percy Jackson and The lightning thief return A LOT of results, with the first release not
-even showing depending on how it was searched. Some of the results are were:
+even showing depending on how it was searched. Some results were:
 - The Lightning Thief
 - Percy Jackson and the Olympians: The Lightning Thief
 - Percy Jackson and the Olympians: The Lightning Thief (Book 1)
@@ -96,7 +93,7 @@ even showing depending on how it was searched. Some of the results are were:
 - Percy Jackson and the Olympians: The Lightning Thief (Book 1) (Graphic Novel)
 - ...
 
-Because of this, and demands from college, the search for books is not in the best shape, so I decided to
+Because of this and demands from college, the search for books is not in the best shape, so I decided to
 remove it for now.
 
 The code is open and won't be deleted, and you are invited to try finding a way that makes everyone happy and has

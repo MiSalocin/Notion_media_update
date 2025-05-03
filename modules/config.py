@@ -21,6 +21,8 @@ IGDB_CLIENT_ID       = os.getenv("IGDB_CLIENT_ID")
 IGDB_CLIENT_SECRET   = os.getenv("IGDB_CLIENT_SECRET")
 GOOGLE_BOOKS_API_KEY = os.getenv("GOOGLE_BOOKS_API_KEY")
 
+valid_streaming = ["Netflix", "Disney Plus", "Amazon Prime Video", "Max", "Apple TV+", "HBO Max"]
+
 # Configure headers for the APIs
 notion_headers = {
     "Authorization": f"Bearer {NOTION_TOKEN}",
@@ -35,7 +37,6 @@ igdb_headers = {
     "Client-ID": IGDB_CLIENT_ID,
     "Authorization": None
 }
-
 igdb_token = None
 
 
@@ -154,81 +155,61 @@ def calculate_title_similarity(title1, title2):
 
     return ratio
 
-def to_notion(data, media_type, page_id=None):
+def to_notion(data, media_type, page_id):
     """
-    Upload book data to a Notion database
+    Convert data to Notion properties without making API calls.
 
     Args:
         data: The data from what you want to upload to Notion
         media_type: The type of the data, e.g., "Book" or "Movie"
-        page_id: Optional ID of an existing Notion page to update
+        page_id: ID of an existing Notion page to update
     """
-
     properties = {"Type": {"select": {"name": media_type}}}
     title = ""
-    poster = cover = None
-
+    poster = None
     emoji = ""
-    # if media_type == "Book":
-    #     emoji = "📖"
-    #     title = data.get("title", "")
-    #     authors = data.get("authors", [])
-    #     publish_date = data.get("publish_date", "")
-    #     cover_url = data.get("cover_url", "")
-    #     subjects = data.get("subjects", [])
-    #     rating = data.get("rating", 0)
-    #     description = data.get("description", "")
-    #     pages = data.get("number_of_pages", 0)
-    #
-    #     # Get year from publish date
-    #     year = publish_date[:4] if publish_date else ""
-    #
-    #     # Add book properties
-    #     properties["Name"] = {"title": [{"text": {"content": title}}]}
-    #     properties["Year"] = {"rich_text": [{"text": {"content": year}}]}
-    #     properties["Image"] = {"files": []} if not cover_url else {
-    #         "files": [{"type": "external", "name": "Cover", "external": {"url": cover_url}}]}
-    #     properties["Writer"] = {"multi_select": authors}
-    #     properties["Genre"] = {"multi_select": subjects}
-    #     properties["Synopsis"] = {"rich_text": []} if not description else {
-    #         "rich_text": [{"text": {"content": description[:2000]}}]}  # Limit to 2000 chars
-    #     properties["Release date"] = {"date": None} if not publish_date else {"date": {"start": publish_date}}
-    #     properties["Global Rating"] = {"number": rating}
-    #     properties["Episodes/pages"] = {"number": pages}
+    cover = None
+
     if media_type == "Game":
-        emoji          = "🕹️"
-        title          = data.get("title", "")
-        developers     = data.get("developers", [])
-        release_date   = data.get("release_date", "")
-        cover          = data.get("background", "")
-        bg_url         = data.get("cover", "")
-        genres         = data.get("genres", [])
-        rating         = data.get("rating", 0)
-        description    = data.get("description", "")
-        year           = release_date[:4] if release_date else ""
+        emoji        = "🕹️"
+        title        = data.get("title", "")
+        developers   = data.get("developers", [])
+        release_date = data.get("release_date", "")
+        cover        = data.get("background", "")
+        bg_url       = data.get("cover", "")
+        genres       = data.get("genres", [])
+        rating       = data.get("rating", 0)
+        description  = data.get("description", "")
+        year         = release_date[:4] if release_date else ""
+        platforms    = data.get("platforms", "")
+        publishers   = data.get("publishers", [])
+        status       = data.get("status", "")
 
         # Add game properties
-        properties["Name"]              = {"title": [{"text": {"content": title}}]}
-        properties["Year"]              = {"rich_text": [{"text": {"content": year}}]}
-        properties["Image"]             = {"files": []} if not bg_url else {"files":
-                                                   [{"type": "external", "name": "Cover", "external": {"url": bg_url}}]}
-        properties["Writer/Developer"]  = {"multi_select": developers}
-        properties["Genre"]             = {"multi_select": genres}
-        properties["Synopsis"]          = {"rich_text": []} if not description else {"rich_text": [{"text":
-                                                                                      {"content": description[:2000]}}]}
-        properties["Release date"]      = {"date": None} if not release_date else {"date": {"start": release_date}}
-        properties["Global Rating"]     = {"number": np.round(float(rating),1)}
-        properties["Update"]            = {"select": {"name": "No"}}
+        properties["Name"]                = {"title": [{"text": {"content": title}}]}
+        properties["Year"]                = {"rich_text": [{"text": {"content": year}}]}
+        properties["Status"]              = {"select": None} if not status else {"select": {"name": status}}
+        properties["Image"]               = {"files": []} if not bg_url else {"files":[{"type": "external", "name": "Cover","external": {"url": bg_url}}]}
+        properties["Director/Publisher"]  = {"multi_select": publishers or []}
+        properties["Writer/Developer"]    = {"multi_select": developers}
+        properties["Genre"]               = {"multi_select": genres}
+        properties["Synopsis"]            = {"rich_text": []} if not description else {"rich_text": [{"text": {"content": description[:2000]}}]}
+        properties["Release date"]        = {"date": None} if not release_date else {"date": {"start": release_date}}
+        properties["Global Rating"]       = {"number": np.round(float(rating),1)}
+        properties["Update"]              = {"select": {"name": "No"}}
+        properties["Streaming/Platforms"] = {"multi_select": platforms or []}
 
     # Audiovisual
     if media_type == "TV Series" or media_type == "Movie":
-        emoji         = "🎞️"
-        title         = data.get("title") if media_type == "Movie" else data.get("name", "")
-        cover         = f"https://image.tmdb.org/t/p/original{data.get('backdrop_path')}"\
-            if data.get("backdrop_path") else f"https://image.tmdb.org/t/p/original{data.get('poster_path')}"\
-            if data.get("poster_path")   else None
-        poster        = f"https://image.tmdb.org/t/p/original{data.get('poster_path')}"\
-                                                          if data.get("poster_path") else None
+        emoji = "🎞️" if media_type == "Movie" else "🎬"
+        title = data.get("title") if media_type == "Movie" else data.get("name", "")
+
+        if data.get("poster_path"):
+            cover = f"https://image.tmdb.org/t/p/original{data.get('poster_path')}"
+            poster = f"https://image.tmdb.org/t/p/original{data.get('poster_path')}"
+        if data.get("backdrop_path"):
+            cover = f"https://image.tmdb.org/t/p/original{data.get('backdrop_path')}"
+
         genres        = data.get("genres", [])
         status        = data.get("status")
         synopsis      = data.get("overview")
@@ -242,8 +223,10 @@ def to_notion(data, media_type, page_id=None):
         directors = []
 
         for member in crew:
-            if member.get("job") == "Writer": writers.append({"name": member["name"]})
-            if member.get("job") == "Director": directors.append({"name": member["name"]})
+            if member.get("job") == "Screenplay" or member.get("job") == "Writer":
+                writers.append({"name": member["name"]})
+            if member.get("job") == "Director":
+                directors.append({"name": member["name"]})
 
         # Get streaming providers
         providers_data = data.get("watch/providers", {})
@@ -251,27 +234,26 @@ def to_notion(data, media_type, page_id=None):
         try:
             country_data = providers_data["results"].get(WATCH_REGION, {})
             flatrate = country_data.get("flatrate", [])
-            for provider in flatrate: streaming.append({"name": provider["provider_name"]})
+            for provider in flatrate:
+                if provider["provider_name"] in valid_streaming: streaming.append({"name": provider["provider_name"]})
         except Exception as e:
             streaming = [{"name": "Not available"}]
             print(f"Error getting streaming providers: {e}")
         for d in genres: d.pop('id', None)  # `None` prevents error if the key doesn't exist
 
         # Add shared properties
-        properties["Update"]             = {"select": {"name": "No"}}
-        properties["Name"]               = {"title": [{"text": {"content": title or ""}}]}
-        properties["Year"]               = {"rich_text": [{"text": {"content": year or ""}}]}
-        properties["Image"]              = {"files": []} if not poster else {"files":
-                                                  [{"type": "external", "name": "Cover", "external": {"url": poster}}]}
-        properties["Status"]             = {"select": None} if not status else {"select": {"name": status}}
-        properties["Genre"]              = {"multi_select": genres or []}
-        properties["Writer/Developer"]   = {"multi_select": writers or []}
-        properties["Director/Publisher"] = {"multi_select": directors or []}
-        properties["Synopsis"]           = {"rich_text": []} if not synopsis else {"rich_text": [{"text":
-                                                                                           {"content": synopsis}}]}
-        properties["Streaming/Platforms"]          = {"multi_select": streaming or []}
-        properties["Release date"]       = {"date": None} if not release_date else {"date": {"start": release_date}}
-        properties["Global Rating"]      = {"number": np.round(global_rating,1) or 0}
+        properties["Update"]              = {"select": {"name": "No"}}
+        properties["Name"]                = {"title": [{"text": {"content": title or ""}}]}
+        properties["Year"]                = {"rich_text": [{"text": {"content": year or ""}}]}
+        properties["Image"]               = {"files": []} if not poster else { "files": [{"type": "external", "name": "Cover", "external": {"url": poster}}]}
+        properties["Status"]              = {"select": None} if not status else {"select": {"name": status}}
+        properties["Genre"]               = {"multi_select": genres or []}
+        properties["Writer/Developer"]    = {"multi_select": writers or []}
+        properties["Director/Publisher"]  = {"multi_select": directors or []}
+        properties["Synopsis"]            = {"rich_text": []} if not synopsis else {"rich_text": [{"text": {"content": synopsis}}]}
+        properties["Streaming/Platforms"] = {"multi_select": streaming or []}
+        properties["Release date"]        = {"date": None} if not release_date else {"date": {"start": release_date}}
+        properties["Global Rating"]       = {"number": np.round(global_rating,1) or 0}
 
         # TV Series specific fields
         if media_type == "TV Series":
@@ -299,32 +281,11 @@ def to_notion(data, media_type, page_id=None):
                "cover": {"type": "external", "external": {"url": cover}} if cover else None}
 
     # If we have a page ID, update that page
-    if page_id:
-        update_url = f"https://api.notion.com/v1/pages/{page_id}"
-        update_response = requests.patch(update_url, headers=notion_headers, json=payload)
-        if update_response.status_code == 200:
-            print(f"{emoji}🔄 '{title}' updated in Notion.")
-        else:
-            requests.patch(update_url, headers=notion_headers,
-                                             json={"properties": {"Update": {"select": {"name": "Yes"}}}})
-            print(f"{emoji}❌ Error updating '{title}': {update_response.text}")
+    update_url = f"https://api.notion.com/v1/pages/{page_id}"
+    update_response = requests.patch(update_url, headers=notion_headers, json=payload)
+    if update_response.status_code == 200:
+        print(f"{emoji}🔄 '{title}' updated in Notion.")
     else:
-        # Otherwise search for a page with the same title
-        query_url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
-        query_payload = {"filter": {"property": "Name","title": {"equals": title}}}
-
-        query_response = requests.post(query_url, headers=notion_headers, json=query_payload)
-        results = query_response.json().get("results", [])
-
-        if results:
-            page_id = results[0]["id"]
-            update_url = f"https://api.notion.com/v1/pages/{page_id}"
-            update_response = requests.patch(update_url, headers=notion_headers, json=payload)
-            if update_response.status_code == 200:
-                print(f"{emoji}🔄 '{title}' updated in Notion.")
-            else:
-                requests.patch(update_url, headers=notion_headers,
-                                                 json={"properties": {"Update": {"select": {"name": "Yes"}}}})
-                print(f"{emoji}❌ Error updating '{title}': {update_response.text}")
-        else:
-            print(f"{emoji}❌ Error adding '{title}': Bad programmer did not antecipate this case")
+        requests.patch(update_url, headers=notion_headers,
+                                         json={"properties": {"Update": {"select": {"name": "Yes"}}}})
+        print(f"{emoji}❌ Error updating '{title}': {json.dumps(update_response.json(), indent=4)}")

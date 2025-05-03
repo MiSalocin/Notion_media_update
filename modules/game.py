@@ -70,11 +70,16 @@ def process_igdb_game(data):
     publishers  = [{"name": company.get('company', {}).get('name')}
                    for company in data.get('involved_companies', [])
                    if company.get('publisher') and company.get('company', {}).get('name')]
+    release_date = 0
+    status = "Unknown"
+    if data.get('first_release_date'):
+        release_date = datetime.fromtimestamp(data['first_release_date'])
+        if release_date > datetime.now():
+            status = "Upcoming"
+        elif release_date < datetime.now():
+            status = "Released"
 
-    release_date = datetime.fromtimestamp(data['first_release_date']).strftime('%Y-%m-%d')\
-        if data.get('first_release_date') else None
-
-    # Choose a storyline over summary if available
+    release_date = release_date.strftime('%Y-%m-%d')
     description = data.get('storyline') or data.get('summary', '')
 
     # Process cover URL
@@ -118,6 +123,7 @@ def process_igdb_game(data):
                 bg_img = screenshot_url
 
     return {
+        "status":           status,
         "genres":           genres,
         "title":            data.get('name', ''),
         "rating":           data.get('rating') / 10 if data.get('rating') else 0,
@@ -187,7 +193,6 @@ def search_game(search_query, release_date=None):
         game_data = asyncio.run(search_igdb_game(search_query, release_date))
         if game_data:
             return game_data
-        return None
     except Exception as e:
         print(f"Error searching IGDB: {str(e)}")
 

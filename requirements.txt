@@ -1,9 +1,6 @@
 # Web scraping and HTTP requests
 requests
 beautifulsoup4
-
-# Database handling
 python-dotenv
-
-# Date handling
 python-dateutil
+numpy

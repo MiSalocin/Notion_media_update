@@ -7,7 +7,7 @@ from datetime import datetime
 
 igdb_token = None
 
-async def search_igdb_game(title, release_date=None):
+def search_igdb_game(title, release_date=None):
     """
     Search for a game using the IGDB API
     """
@@ -42,14 +42,14 @@ async def search_igdb_game(title, release_date=None):
                     f'involved_companies.company.name;')
 
     url = "https://api.igdb.com/v4/games"
+    response = requests.post(url, headers=igdb_headers, data=query)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=igdb_headers, data=query) as response:
-            if response.status == 200:
-                data = await response.json()
-                if data and len(data) > 0:
-                    data = choose_best_result(data, title, release_date)
-                    return process_igdb_game(data)
+    if response.status_code == 200:
+        data = response.json()
+        if data:
+            data = choose_best_result(data, title, release_date)
+            return process_igdb_game(data)
+
     return None
 
 def process_igdb_game(data):
@@ -190,7 +190,7 @@ def process_rawg_game(game_data):
 
 def search_game(search_query, release_date=None):
     try:
-        game_data = asyncio.run(search_igdb_game(search_query, release_date))
+        game_data = search_igdb_game(search_query, release_date)
         if game_data:
             return game_data
     except Exception as e:

@@ -1,17 +1,9 @@
 # Web scraping and HTTP requests
-requests==2.31.0
-beautifulsoup4==4.12.2
-lxml==4.9.3
+requests
+beautifulsoup4
 
 # Database handling
-SQLAlchemy==2.0.23
-python-dotenv==1.0.0
+python-dotenv
 
 # Date handling
-python-dateutil==2.8.2
-
-# Optional: Progress bars for longer operations
-tqdm==4.66.1
-
-# Optional: For async operations if needed
-aiohttp==3.8.6
+python-dateutil

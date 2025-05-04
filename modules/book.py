@@ -1,12 +1,3 @@
-import json
-import re
-
-import aiohttp
-
-from urllib.parse import quote
-
-import numpy as np
-from bs4 import BeautifulSoup
 
 from modules.bookscrapper import GoodreadsBookScraper
 

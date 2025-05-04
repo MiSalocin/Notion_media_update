@@ -1,8 +1,6 @@
-import aiohttp
 from urllib.parse import quote
 from modules.config import *
 
-import asyncio
 from datetime import datetime
 
 igdb_token = None

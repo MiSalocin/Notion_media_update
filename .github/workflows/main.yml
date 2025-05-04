@@ -45,13 +45,13 @@ jobs:
         env:
 
           # Notion API credentials
-          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
-          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DATABASE_ID: ${{ secrets.DATABASE_ID }}
+          PAGE_ID: ${{ secrets.PAGE_ID }}
+
 
           # External APIs credentials
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           IGDB_CLIENT_ID: ${{ secrets.IGDB_CLIENT_ID }}
           IGDB_CLIENT_SECRET: ${{ secrets.IGDB_CLIENT_SECRET }}
-
-          # Database configuration
-          DB_CONNECTION_STRING: ${{ secrets.DB_CONNECTION_STRING }}
+          RAWG_API_KEY: ${{ secrets.RAWG_API_KEY }}

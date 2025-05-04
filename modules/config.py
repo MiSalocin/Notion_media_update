@@ -1,4 +1,5 @@
 # API Keys and other secret codes
+import json
 import os
 import numpy as np
 import re
@@ -167,8 +168,8 @@ def to_notion(data, media_type, page_id):
     properties = {"Type": {"select": {"name": media_type}}}
     title = ""
     poster = None
-    emoji = ""
     cover = None
+    emoji = ""
 
     if media_type == "Game":
         emoji        = "🕹️"
@@ -176,7 +177,7 @@ def to_notion(data, media_type, page_id):
         developers   = data.get("developers", [])
         release_date = data.get("release_date", "")
         cover        = data.get("background", "")
-        bg_url       = data.get("cover", "")
+        poster       = data.get("cover", "")
         genres       = data.get("genres", [])
         rating       = data.get("rating", 0)
         description  = data.get("description", "")
@@ -189,7 +190,7 @@ def to_notion(data, media_type, page_id):
         properties["Name"]                = {"title": [{"text": {"content": title}}]}
         properties["Year"]                = {"rich_text": [{"text": {"content": year}}]}
         properties["Status"]              = {"select": None} if not status else {"select": {"name": status}}
-        properties["Image"]               = {"files": []} if not bg_url else {"files":[{"type": "external", "name": "Cover","external": {"url": bg_url}}]}
+        properties["Image"]               = {"files": []} if not poster else {"files":[{"type": "external", "name": "Cover","external": {"url": poster}}]}
         properties["Director/Publisher"]  = {"multi_select": publishers or []}
         properties["Writer/Developer"]    = {"multi_select": developers}
         properties["Genre"]               = {"multi_select": genres}
@@ -199,7 +200,6 @@ def to_notion(data, media_type, page_id):
         properties["Update"]              = {"select": {"name": "No"}}
         properties["Streaming/Platforms"] = {"multi_select": platforms or []}
 
-    # Audiovisual
     if media_type == "TV Series" or media_type == "Movie":
         emoji = "🎞️" if media_type == "Movie" else "🎬"
         title = data.get("title") if media_type == "Movie" else data.get("name", "")
@@ -276,11 +276,75 @@ def to_notion(data, media_type, page_id):
                 properties["Upcoming episode"] = {"rich_text": [{"text": {"content": next_episode.get("name", "")}}]}
                 properties["Next air date"]    = {"date": {"start": next_episode.get("air_date", "")}}
 
+    if media_type == "Book":
+        emoji        = "📚"
+        title        = data.get("name", "")
+        author       = data.get("writer", [])
+        release_date = data.get("first_publication_year", "")
+        cover        = data.get("cover", "")
+        genres       = data.get("genres", [])
+        rating       = data.get("rating", 0)
+        description  = data.get("summary", "")
+        year         = release_date[-4:] if release_date else ""
+        status       = data.get("is_released", "")
+        pages        = data.get("pages", {})
+
+        genres = [{"name": string} for string in genres]
+        status = "Released" if status else "Upcoming"
+        release_date = datetime.strptime(release_date, "%B %d, %Y")
+        release_date = release_date.strftime("%Y-%m-%d")
+
+        # Add book properties
+        properties["Name"]             = {"title": [{"text": {"content": title}}]}
+        properties["Year"]             = {"rich_text": [{"text": {"content": year}}]}
+        properties["Status"]           = {"select": None} if not status else {"select": {"name": status}}
+        properties["Image"]            = {"files": []} if not cover else {"files":[{"type": "external", "name": "Cover","external": {"url": cover}}]}
+        properties["Writer/Developer"] = {"multi_select": [{"name": author}] or []}
+        properties["Genre"]            = {"multi_select": genres or []}
+        properties["Synopsis"]         = {"rich_text": []} if not description else {"rich_text": [{"text": {"content": description[:2000]}}]}
+        properties["Release date"]     = {"date": {"start": release_date}} if release_date else {"date": None}
+        properties["Global Rating"]    = {"number": np.round(float(rating*2),1)}
+        properties["Update"]           = {"select": {"name": "No"}}
+        properties["Episodes/pages"]   = {"number": pages or 0}
+
     cover = cover if cover else poster if poster else None
     payload = {"properties": properties,
                "cover": {"type": "external", "external": {"url": cover}} if cover else None}
+    #--------------------------------------------
+
+
+    img_body = {"children": []}
+    img_body["children"].append({
+        "object": "block",
+        "type": "image",
+        "image": payload["cover"]})
+
+    if cover != poster:
+        img_body["children"].append({
+            "object": "block",
+            "type": "image",
+            "image":{"type": "external", "external": {"url": poster}}})
+
+    # Add images to the page if they don't exist already
+    url = f"https://api.notion.com/v1/blocks/{page_id}/children?page_size=100"
+    response = requests.get(url, headers=notion_headers)
+
+    if response.status_code != 200:
+        print(f"Error retrieving children: {response.text}")
+        return []
+
+    blocks = response.json().get("results", [])
+    img_body_copy = img_body.copy()
+    for block in blocks:
+        for child in img_body_copy["children"]:
+            if block.get("type") == "image":
+                if (block.get("image", {}).get("external", {}).get("url") ==
+                        child["image"]["external"]["url"]):
+                    img_body["children"].remove(child)
 
     # If we have a page ID, update that page
+    update_url = f"https://api.notion.com/v1/blocks/{page_id}/children"
+    requests.patch(update_url,headers=notion_headers,json=img_body)
     update_url = f"https://api.notion.com/v1/pages/{page_id}"
     update_response = requests.patch(update_url, headers=notion_headers, json=payload)
     if update_response.status_code == 200:

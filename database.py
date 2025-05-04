@@ -2,6 +2,7 @@ import time
 import concurrent.futures
 
 from modules.audiovisual import *
+from modules.book import search_book
 from modules.game import *
 
 def get_all_notion_entries():
@@ -31,7 +32,7 @@ def get_all_notion_entries():
             page_id             = page["id"]
 
             if type_prop and status:
-                if  status.get("name") not in ["Released", "Ended", "Cancelled"]:
+                if  status.get("name") not in ["Released", "Ended", "Canceled"]:
                     update = True
             elif type_prop and not status:
                 update = True
@@ -78,6 +79,8 @@ def search(search_query, media_type=None, release_date=None, page_id=None):
             result = search_game(search_query)
         elif media_type == "Movie" or media_type == "TV Series" :
             result = search_movies_and_series(search_query, media_type, release_date)
+        elif media_type == "Book":
+            result = search_book(search_query)
         else:
             print(f"{media_type} not supported.")
             result = None
